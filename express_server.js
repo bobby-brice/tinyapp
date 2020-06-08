@@ -1,27 +1,60 @@
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
+const bodyParser = require("body-parser");
 
 app.set('view engine', "ejs");
 
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
 
-//routes
+//Function to generate the shortened URL
+// eslint-disable-next-line func-style
+function generateRandomString() {
+  let result = "";
+  let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let charsLength = characters.length;
+  for (let i = 0; i < 6; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charsLength));
+  }
+  return result;
+}
+
+
+
+//ROUTES
+//renders the new URL shortener page that takes in the address to be shortened
+app.get("/urls/new", (req, res) => {
+  res.render("urls_new");
+});
+
+//retrieves the id pointing to the short URL and populates the long url for reference
+app.get("/urls/:shortURL", (req, res) => {
+  let templateVars = {shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]};
+  res.render("urls_show", templateVars);
+});
+
+//route shows our short url and long url table
 app.get("/urls", (req, res) => {
   let templateVars = {urls: urlDatabase};
   console.log(req.params.urls);
   res.render("urls_index", templateVars);
 });
 
-app.get("/urls/:shortURL", (req, res) => {
-  
-  let templateVars = {shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]};
-  res.render("urls_show", templateVars);
+//POST
+app.post("/urls", (req, res) => {
+  console.log(req.body); // Log the POST request body to the console
+  res.send("Ok"); // Respond with 'Ok' (we will replace this)
 });
+
+
+
 
 app.get("/", (req, res) => {
   res.send("Hello!");
