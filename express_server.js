@@ -26,12 +26,19 @@ function generateRandomString() {
   return result;
 }
 
-
-
 //ROUTES
 //renders the new URL shortener page that takes in the address to be shortened
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
+});
+
+//redirects short URLs to long URL
+app.get("/u/:shortURL", (req, res) => {
+  console.log(req.params.shortURL);
+  
+  let shortURL = req.params.shortURL;
+  const longURL = urlDatabase[shortURL];
+  res.redirect(longURL);
 });
 
 //retrieves the id pointing to the short URL and populates the long url for reference
@@ -40,20 +47,22 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+
 //route shows our short url and long url table
 app.get("/urls", (req, res) => {
   let templateVars = {urls: urlDatabase};
-  console.log(req.params.urls);
   res.render("urls_index", templateVars);
 });
 
 //POST
 app.post("/urls", (req, res) => {
-  console.log(req.body); // Log the POST request body to the console
-  res.send("Ok"); // Respond with 'Ok' (we will replace this)
+  // console.log(req.body); // Log the POST request body to the console
+  const tinyURL = generateRandomString(); //produces the key
+  const longURL = req.body.longURL; //gets the value from the response body
+  urlDatabase[tinyURL] = longURL;
+
+  res.redirect(`/urls/${tinyURL}`);
 });
-
-
 
 
 app.get("/", (req, res) => {
