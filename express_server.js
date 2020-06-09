@@ -28,7 +28,28 @@ function generateRandomString() {
   return result;
 }
 
-//ROUTES
+
+// Generic routes
+
+// If we have a GET request asking for the path of '/', do the callback
+app.get("/", (req, res) => {
+  res.send("Hello!");
+});
+
+// In the event of a GET request, asking for /hello, we send back hello world in HTML in the callback
+app.get("/hello", (req, res) => {
+  res.send("<html><body>Hello <b>World</b></body></html>\n");
+});
+
+// If we have a GET request, asking for /urls.json, we do the callback
+app.get("/urls.json", (req, res) => {
+  // WTF is res.json
+  // res.json stringifies the object then sends it back
+  res.json(urlDatabase);
+});
+
+//---------------------------------------URL specific ROUTES------------------------
+
 //renders the new URL shortener page that takes in the address to be shortened
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
@@ -43,8 +64,13 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 
+// In the event of a GET request, asking for /urls/somethingIDontKnowYet, do the callback
+// :shortURL is a route parameter, accessible in req.params (like a wildcard)
 //retrieves the id pointing to the short URL and populates the long url for reference
 app.get("/urls/:shortURL", (req, res) => {
+  // Declare an object called templateVars
+  // Populate the object with : the value of req.params.shortURL, in the key called shortURL
+  // Populate the object with : the value of the urlDatabse, at the key of req.params.shortURL, in the key called longURL
   let templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL]
@@ -55,13 +81,17 @@ app.get("/urls/:shortURL", (req, res) => {
 
 //route shows our short url and long url table
 app.get("/urls", (req, res) => {
+  // Declare an object called templateVars, and we assign to the key urls, the value of the variable urlDatabase
   let templateVars = {
     urls: urlDatabase
   };
+  // Render the template (or complete the template) with the values provided by the object called templateVars
   res.render("urls_index", templateVars);
 });
 
-//POST
+//POST Requests
+
+//takes a request from
 app.post("/urls", (req, res) => {
   // console.log(req.body); // Log the POST request body to the console
   const tinyURL = generateRandomString(); //produces the key
@@ -71,6 +101,8 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${tinyURL}`);
 });
 
+//Takes a delete request from the form in urls_index
+//redirects to the same page as a form of refresh
 app.post("/urls/:shortURL/delete", (req, res) => {
   console.log(req.params);
   
@@ -79,6 +111,9 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect("/urls");
 });
 
+//takes a request from the shortURL page
+//input is a newURL and a submit button
+//updates the existing shortURL with a new longURL
 app.post("/urls/:shortURL", (req, res) => {
   console.log(req.params);
   console.log(req.body);
@@ -90,7 +125,7 @@ app.post("/urls/:shortURL", (req, res) => {
 });
 
 
-//PORT
+// Trigger a listen action, on a specific port (8080) and do a callback if it worked
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
