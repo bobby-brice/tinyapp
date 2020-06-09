@@ -6,10 +6,29 @@
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-      <div class="navbar-nav">
-        <a class="nav-item nav-link" href="/urls">My URLs</a>
-        <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
-      </div>
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item"><a class="nav-link" href="/urls">My URLs</a></li>
+        <li class="nav-item"><a class="nav-link" href="/urls/new">Create New URL</a></li>
+      </ul>
+
+      <form class="form-inline mx-4" action="/login" method="POST">
+        <input placeholder="Username" class="bg-3" id="username" type="text" name="username">
+        <button type="submit" class="btn btn-outline-dark">Login</button>
+      </form>
     </div>
   </nav>
 </header>
+
+<div>
+  <!-- <% if(<%= templateVars.username %>){ %>
+  <h3>Logged in as: <%= username %>!</h3>
+  <form class="form-inline" action="/logout" method="POST">
+    <button type="submit" class="btn btn-outline-dark">Logout</button>
+  </form>
+  <% } %>
+  <% else{ %>
+  <form class="form-inline" action="/login" method="POST">
+    <input placeholder="Username" class="bg-3" id="username" type="text" name="username">
+    <button type="submit" class="btn btn-outline-dark">Login</button>
+    <% } %>
+</div> -->

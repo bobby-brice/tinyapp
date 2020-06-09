@@ -3,8 +3,9 @@ const app = express();
 const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
 const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
 
-
+app.use(cookieParser());
 app.set('view engine', "ejs");
 app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({
@@ -72,6 +73,7 @@ app.get("/urls/:shortURL", (req, res) => {
   // Populate the object with : the value of req.params.shortURL, in the key called shortURL
   // Populate the object with : the value of the urlDatabse, at the key of req.params.shortURL, in the key called longURL
   let templateVars = {
+    username: req.cookies["username"],
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL]
   };
@@ -81,8 +83,11 @@ app.get("/urls/:shortURL", (req, res) => {
 
 //route shows our short url and long url table
 app.get("/urls", (req, res) => {
+  console.log("the cookie", req.cookies);
+  
   // Declare an object called templateVars, and we assign to the key urls, the value of the variable urlDatabase
   let templateVars = {
+    username: req.cookies["username"],
     urls: urlDatabase
   };
   // Render the template (or complete the template) with the values provided by the object called templateVars
@@ -112,7 +117,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 //takes a request from the shortURL page
-//input is a newURL and a submit button
+//input is a newURL and a submit button FORM
 //updates the existing shortURL with a new longURL
 app.post("/urls/:shortURL", (req, res) => {
   console.log(req.params);
@@ -121,6 +126,24 @@ app.post("/urls/:shortURL", (req, res) => {
   let longURL = req.body.newURL;
   urlDatabase[shortURL] = longURL;
 
+  res.redirect("/urls");
+});
+
+
+//LOGIN & LOGOUT ROUTES
+//handles a post from the nav-form for user login
+app.post("/login", (req, res) => {
+  console.log(req.body);
+  let username = req.body.username;
+  res.cookie("username", username);
+  res.redirect("/urls");
+});
+
+//handles a post from the nav-form for user login
+app.post("/logout", (req, res) => {
+  // console.log(req.body);
+  let username = req.body.username;
+  res.clearCookie("username", username);
   res.redirect("/urls");
 });
 
