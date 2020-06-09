@@ -2,9 +2,11 @@ const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
+const morgan = require('morgan');
+
 
 app.set('view engine', "ejs");
-
+app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({
   extended: true
 }));
@@ -35,7 +37,7 @@ app.get("/urls/new", (req, res) => {
 //redirects short URLs to long URL
 app.get("/u/:shortURL", (req, res) => {
   console.log(req.params.shortURL);
-  
+
   let shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL];
   res.redirect(longURL);
@@ -43,14 +45,19 @@ app.get("/u/:shortURL", (req, res) => {
 
 //retrieves the id pointing to the short URL and populates the long url for reference
 app.get("/urls/:shortURL", (req, res) => {
-  let templateVars = {shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]};
+  let templateVars = {
+    shortURL: req.params.shortURL,
+    longURL: urlDatabase[req.params.shortURL]
+  };
   res.render("urls_show", templateVars);
 });
 
 
 //route shows our short url and long url table
 app.get("/urls", (req, res) => {
-  let templateVars = {urls: urlDatabase};
+  let templateVars = {
+    urls: urlDatabase
+  };
   res.render("urls_index", templateVars);
 });
 
@@ -62,6 +69,14 @@ app.post("/urls", (req, res) => {
   urlDatabase[tinyURL] = longURL;
 
   res.redirect(`/urls/${tinyURL}`);
+});
+
+app.post("/urls/:shortURL/delete", (req, res) => {
+  console.log(req.params);
+  
+  const shortURL = req.params.shortURL;
+  delete urlDatabase[shortURL];
+  res.redirect("/urls");
 });
 
 
