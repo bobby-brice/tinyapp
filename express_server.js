@@ -79,19 +79,15 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect("/urls");
 });
 
+app.post("/urls/:shortURL", (req, res) => {
+  console.log(req.params);
+  console.log(req.body);
+  let shortURL = req.params.shortURL;
+  let longURL = req.body.newURL;
+  urlDatabase[shortURL] = longURL;
 
-app.get("/", (req, res) => {
-  res.send("Hello!");
+  res.redirect("/urls");
 });
-
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
-
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
-
 
 
 //PORT
