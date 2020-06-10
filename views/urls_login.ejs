@@ -11,13 +11,14 @@
 </head>
 
 <body>
+  <%- include('partials/_header') %>
   <div class="container">
     <h1>Login</h1>
     <form class="form group" method="POST" action="/login">
       <div style="width: 20em;">
         <div class="form-group">
           <label for="email">Email:</label>
-          <input style="width: 100%" type="text" name="email" id="email" placeholder="Please enter your email">
+          <input style="width: 100%" type="email" name="email" id="email" placeholder="Please enter your email">
         </div>
         <div class="form-group">
           <label for="password">Password:</label>

@@ -164,7 +164,10 @@ app.get("/urls", (req, res) => {
 
 //show the registration page if a user requests 'register' from the header form
 app.get("/register", (req, res) => {
-  const templateVars = {currentUser: null};
+  let templateVars = {
+    user: users[req.cookies["user_id"]],
+    urls: urlDatabase
+  };
   res.render("urls_register", templateVars);
 });
 
@@ -191,7 +194,10 @@ app.post("/register", (req, res) => {
 
 
 app.get("/login", (req, res) => {
-  const templateVars = {currentUser: null};
+  let templateVars = {
+    user: users[req.cookies["user_id"]],
+    urls: urlDatabase
+  };
   res.render("urls_login", templateVars);
 });
 
