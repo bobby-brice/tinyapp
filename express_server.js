@@ -99,6 +99,10 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+app.get("/register", (req, res) => {
+  res.render("urls_register");
+});
+
 //POST Requests
 
 //takes a request from
