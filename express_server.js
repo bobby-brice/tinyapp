@@ -17,6 +17,20 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = {
+  "userRandomID": {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur"
+  },
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk"
+  },
+};
+
+
 //Function to generate the shortened URL
 // eslint-disable-next-line func-style
 function generateRandomString() {
@@ -28,6 +42,50 @@ function generateRandomString() {
   }
   return result;
 }
+
+const addNewUser = (name, email, password) => {
+  // Generate a random id
+  const userId = generateRandomString();
+
+  const newUser = {
+    id: userId,
+    name,
+    email,
+    password,
+  };
+
+  // Add the user Object into the usersDb
+  users[userId] = newUser;
+  // return the id of the user
+  return userId;
+};
+const findUserByEmail = email => {
+  // const user = Object.values(usersDb).find(userObj => userObj.email === email)
+  //  return user;
+  // loop through the usersDb object
+  for (let userId in users) {
+    // compare the emails, if they match return the user obj
+    if (users[userId].email === email) {
+      return users[userId];
+    }
+  }
+  // after the loop, return false
+  return false;
+};
+
+const authenticateUser = (email, password) => {
+  // retrieve the user with that email
+  const user = findUserByEmail(email);
+
+  // if we got a user back and the passwords match then return the userObj
+  if (user && user.password === password) {
+    // user is authenticated
+    return user;
+  } else {
+    // Otherwise return false
+    return false;
+  }
+};
 
 
 // Generic routes
@@ -44,9 +102,14 @@ app.get("/hello", (req, res) => {
 
 // If we have a GET request, asking for /urls.json, we do the callback
 app.get("/urls.json", (req, res) => {
-  // WTF is res.json
   // res.json stringifies the object then sends it back
   res.json(urlDatabase);
+});
+
+// If we have a GET request, asking for /users.json, we do the callback
+app.get("/users.json", (req, res) => {
+  // res.json stringifies the object then sends it back
+  res.json(users);
 });
 
 //---------------------------------------URL specific ROUTES------------------------
@@ -54,7 +117,7 @@ app.get("/urls.json", (req, res) => {
 //renders the new URL shortener page that takes in the address to be shortened
 app.get("/urls/new", (req, res) => {
   let templateVars = {
-    username: req.cookies["username"],
+    user: users[req.cookies["user_id"]],
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL]
   };
@@ -78,7 +141,7 @@ app.get("/urls/:shortURL", (req, res) => {
   // Populate the object with : the value of req.params.shortURL, in the key called shortURL
   // Populate the object with : the value of the urlDatabse, at the key of req.params.shortURL, in the key called longURL
   let templateVars = {
-    username: req.cookies["username"],
+    user: users[req.cookies["user_id"]],
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL]
   };
@@ -92,27 +155,40 @@ app.get("/urls", (req, res) => {
   
   // Declare an object called templateVars, and we assign to the key urls, the value of the variable urlDatabase
   let templateVars = {
-    username: req.cookies["username"],
+    user: users[req.cookies["user_id"]],
     urls: urlDatabase
   };
   // Render the template (or complete the template) with the values provided by the object called templateVars
   res.render("urls_index", templateVars);
 });
 
+//show the registration page if a user requests 'register' from the header form
 app.get("/register", (req, res) => {
-  // const name = req.body.name;
-  // const email = req.body.email;
-  // const password = req.body.password;
+  const templateVars = {currentUser: null};
+  res.render("urls_register", templateVars);
+});
 
+//needs to check if a user is registered, if they are - return an error/redirect to login.
+//If they are a new user - set the cookie and update our users object.
+app.post("/register", (req, res) => {
+  const name = req.body.username;
+  const email = req.body.email;
+  const password = req.body.password;
+  
+  const user = findUserByEmail(email); //function in the global scope
 
-  res.render("urls_register");
+  if (!user) {
+    const userID = addNewUser(name, email, password);
+    res.cookie("user_id", userID);
+    res.redirect("/urls");
+  } else {
+    res.redirect("/login"); //needs to pass users data obj
+  }
+  
 });
 
 
 app.get("/login", (req, res) => {
-
-
-
   res.render("urls_login");
 });
 
