@@ -43,13 +43,12 @@ function generateRandomString() {
   return result;
 }
 
-const addNewUser = (name, email, password) => {
+const addNewUser = (email, password) => {
   // Generate a random id
   const userId = generateRandomString();
 
   const newUser = {
     id: userId,
-    name,
     email,
     password,
   };
@@ -69,7 +68,7 @@ const findUserByEmail = email => {
       return users[userID];
     }
   }
-  // after the loop, return false
+  // after the loop, return false so it can complete each iteration
   return false;
 };
 
@@ -88,9 +87,9 @@ const authenticateUser = (email, password) => {
 };
 
 
-// Generic routes
+// GENERIC ROUTES
 
-// If we have a GET request asking for the path of '/', do the callback
+// If we have a GET request asking for the path of '/', callback = "hello"
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -112,7 +111,7 @@ app.get("/users.json", (req, res) => {
   res.json(users);
 });
 
-//---------------------------------------URL specific ROUTES------------------------
+//---------------------------------------BEGIN URL SPECIFIC ROUTES------------------------
 
 //renders the new URL shortener page that takes in the address to be shortened
 app.get("/urls/new", (req, res) => {
@@ -130,11 +129,24 @@ app.get("/u/:shortURL", (req, res) => {
 
   let shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL];
-  res.redirect(longURL);
+  res.redirect(longURL); //external site
+});
+
+//takes a request from the shortURL page
+//input is a newURL and a form submit button
+//updates the existing shortURL with a new longURL
+app.post("/urls/:shortURL", (req, res) => {
+  console.log(req.params);
+  console.log(req.body);
+  let shortURL = req.params.shortURL;
+  let longURL = req.body.newURL;
+  urlDatabase[shortURL] = longURL;
+
+  res.redirect("/urls");
 });
 
 // In the event of a GET request, asking for /urls/somethingIDontKnowYet, do the callback
-// :shortURL is a route parameter, accessible in req.params (like a wildcard)
+// :shortURL is a route parameter, accessible in req.params
 //retrieves the id pointing to the short URL and populates the long url for reference
 app.get("/urls/:shortURL", (req, res) => {
   // Declare an object called templateVars
@@ -148,7 +160,6 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-
 //route shows our short url and long url table
 app.get("/urls", (req, res) => {
   console.log("the cookie", req.cookies);
@@ -161,47 +172,6 @@ app.get("/urls", (req, res) => {
   // Render the template (or complete the template) with the values provided by the object called templateVars
   res.render("urls_index", templateVars);
 });
-
-//show the registration page if a user requests 'register' from the header form
-app.get("/register", (req, res) => {
-  let templateVars = {
-    user: users[req.cookies["user_id"]],
-    urls: urlDatabase
-  };
-  res.render("urls_register", templateVars);
-});
-
-//needs to check if a user is registered, if they are - return an error/redirect to login.
-//If they are a new user - set the cookie and update our users object.
-app.post("/register", (req, res) => {
-  const name = req.body.username;
-  const email = req.body.email;
-  const password = req.body.password;
-  
-  const user = findUserByEmail(email); //function in the global scope
-
-  if (email === "" || password === "") {
-    return res.status(404).send("Please provide a valid email & password");
-  } else if (!user) {
-    const userID = addNewUser(name, email, password);
-    res.cookie("user_id", userID);
-    res.redirect("/urls");
-  } else {
-    res.redirect("/login"); //needs to pass users data obj
-  }
-  
-});
-
-
-app.get("/login", (req, res) => {
-  let templateVars = {
-    user: users[req.cookies["user_id"]],
-    urls: urlDatabase
-  };
-  res.render("urls_login", templateVars);
-});
-
-//POST Requests
 
 //takes a request from
 app.post("/urls", (req, res) => {
@@ -223,21 +193,47 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect("/urls");
 });
 
-//takes a request from the shortURL page
-//input is a newURL and a submit button FORM
-//updates the existing shortURL with a new longURL
-app.post("/urls/:shortURL", (req, res) => {
-  console.log(req.params);
-  console.log(req.body);
-  let shortURL = req.params.shortURL;
-  let longURL = req.body.newURL;
-  urlDatabase[shortURL] = longURL;
+//---------------------------------------END URL SPECIFIC ROUTES------------------------
 
-  res.redirect("/urls");
+//---------------------------------------BEGIN REGISTRATION------------------------
+//show the registration page if a user requests 'register' from the header form
+app.get("/register", (req, res) => {
+  let templateVars = {
+    user: users[req.cookies["user_id"]],
+    urls: urlDatabase
+  };
+  res.render("urls_register", templateVars);
 });
 
+//needs to check if a user is registered, if they are - return an error/redirect to login.
+//If they are a new user - set the cookie and update our users object.
+app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
 
-//LOGIN & LOGOUT ROUTES
+  const user = findUserByEmail(email); //function in the global scope
+
+  if (email === "" || password === "") {
+    return res.status(404).send("Please provide a valid email & password");
+  } else if (!user) {
+    const userID = addNewUser(email, password);
+    res.cookie("user_id", userID);
+    res.redirect("/urls");
+  } else {
+    return res.status(404).send("You have already registered, please login.");
+  }
+});
+
+//---------------------------------------END REGISTRATION------------------------
+
+//---------------------------------------BEGIN LOGIN & LOGOUT------------------------
+app.get("/login", (req, res) => {
+  let templateVars = {
+    user: users[req.cookies["user_id"]],
+    urls: urlDatabase
+  };
+  res.render("urls_login", templateVars);
+});
 //handles a post from the nav-form for user login
 app.post("/login", (req, res) => {
   const email = req.body.email;
@@ -246,8 +242,14 @@ app.post("/login", (req, res) => {
   //authenticates the user with the helper Fn
   const user = authenticateUser(email, password);
 
+  if (user) {
+    res.cookie("user_id", user.id);
+    res.redirect("/urls");
+  } else {
+    res.status(403).send('You have provided invalid credentials');
+  }
   //if the user passes authentication, set the cookie and redirect to home
-  
+  //if the user fails authentication, response is a 403
   res.redirect("/urls");
 });
 
@@ -258,6 +260,7 @@ app.post("/logout", (req, res) => {
   res.redirect("/urls");
 });
 
+//---------------------------------------END LOGIN & LOGOUT------------------------
 
 // Trigger a listen action, on a specific port (8080) and do a callback if it worked
 app.listen(PORT, () => {
