@@ -100,7 +100,20 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
+  // const name = req.body.name;
+  // const email = req.body.email;
+  // const password = req.body.password;
+
+
   res.render("urls_register");
+});
+
+
+app.get("/login", (req, res) => {
+
+
+
+  res.render("urls_login");
 });
 
 //POST Requests
