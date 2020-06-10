@@ -63,10 +63,10 @@ const findUserByEmail = email => {
   // const user = Object.values(usersDb).find(userObj => userObj.email === email)
   //  return user;
   // loop through the usersDb object
-  for (let userId in users) {
+  for (let userID in users) {
     // compare the emails, if they match return the user obj
-    if (users[userId].email === email) {
-      return users[userId];
+    if (users[userID].email === email) {
+      return users[userID];
     }
   }
   // after the loop, return false
@@ -177,7 +177,9 @@ app.post("/register", (req, res) => {
   
   const user = findUserByEmail(email); //function in the global scope
 
-  if (!user) {
+  if (email === "" || password === "") {
+    return res.status(404).send("Please provide a valid email & password");
+  } else if (!user) {
     const userID = addNewUser(name, email, password);
     res.cookie("user_id", userID);
     res.redirect("/urls");
@@ -189,7 +191,8 @@ app.post("/register", (req, res) => {
 
 
 app.get("/login", (req, res) => {
-  res.render("urls_login");
+  const templateVars = {currentUser: null};
+  res.render("urls_login", templateVars);
 });
 
 //POST Requests
@@ -231,17 +234,21 @@ app.post("/urls/:shortURL", (req, res) => {
 //LOGIN & LOGOUT ROUTES
 //handles a post from the nav-form for user login
 app.post("/login", (req, res) => {
-  console.log(req.body);
-  let username = req.body.username;
-  res.cookie("username", username);
+  const email = req.body.email;
+  const password = req.body.password;
+
+  //authenticates the user with the helper Fn
+  const user = authenticateUser(email, password);
+
+  //if the user passes authentication, set the cookie and redirect to home
+  
   res.redirect("/urls");
 });
 
 //handles a post from the nav-form for user login
 app.post("/logout", (req, res) => {
   // console.log(req.body);
-  let username = req.body.username;
-  res.clearCookie("username", username);
+  res.clearCookie("user_id", null);
   res.redirect("/urls");
 });
 
