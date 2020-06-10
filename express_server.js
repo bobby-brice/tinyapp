@@ -53,7 +53,12 @@ app.get("/urls.json", (req, res) => {
 
 //renders the new URL shortener page that takes in the address to be shortened
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  let templateVars = {
+    username: req.cookies["username"],
+    shortURL: req.params.shortURL,
+    longURL: urlDatabase[req.params.shortURL]
+  };
+  res.render("urls_new", templateVars);
 });
 
 //redirects short URLs to long URL
