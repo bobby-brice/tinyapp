@@ -6,6 +6,10 @@ const morgan = require('morgan');
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
+const {
+  findUserByEmail,
+  generateRandomString
+} = require("./helpers");
 
 app.set('view engine', "ejs");
 app.use(morgan('dev'));
@@ -47,18 +51,6 @@ const users = {
 };
 
 
-//Function to generate the shortened URL
-// eslint-disable-next-line func-style
-function generateRandomString() {
-  let result = "";
-  let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let charsLength = characters.length;
-  for (let i = 0; i < 6; i++) {
-    result += characters.charAt(Math.floor(Math.random() * charsLength));
-  }
-  return result;
-}
-
 const addNewUser = (email, password) => {
   // Generate a random id
   const userId = generateRandomString();
@@ -75,19 +67,7 @@ const addNewUser = (email, password) => {
   // return the id of the user
   return userId;
 };
-const findUserByEmail = email => {
-  // const user = Object.values(usersDb).find(userObj => userObj.email === email)
-  //  return user;
-  // loop through the usersDb object
-  for (let userID in users) {
-    // compare the emails, if they match return the user obj
-    if (users[userID].email === email) {
-      return users[userID];
-    }
-  }
-  // after the loop, return false so it can complete each iteration
-  return false;
-};
+
 
 const authenticateUser = (email, password) => {
   // retrieve the user with that email
@@ -113,36 +93,6 @@ const urlsForUser = function(userID) {
   return urlsForUsersDatabase;
 };
 
-// {
-//   "9sm3xK": {
-//     longURL: "http://www.google.ca",
-//     userID: "aJ482W"
-//   }
-// }
-
-// GENERIC ROUTES
-
-// If we have a GET request asking for the path of '/', callback = "hello"
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-
-// In the event of a GET request, asking for /hello, we send back hello world in HTML in the callback
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
-
-// If we have a GET request, asking for /urls.json, we do the callback
-app.get("/urls.json", (req, res) => {
-  // res.json stringifies the object then sends it back
-  res.json(urlDatabase);
-});
-
-// If we have a GET request, asking for /users.json, we do the callback
-app.get("/users.json", (req, res) => {
-  // res.json stringifies the object then sends it back
-  res.json(users);
-});
 
 //---------------------------------------BEGIN URL SPECIFIC ROUTES------------------------
 
