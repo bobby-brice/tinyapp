@@ -4,7 +4,8 @@ const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
-
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
 app.use(cookieParser());
 app.set('view engine', "ejs");
 app.use(morgan('dev'));
@@ -88,7 +89,7 @@ const authenticateUser = (email, password) => {
   const user = findUserByEmail(email);
 
   // if we got a user back and the passwords match then return the userObj
-  if (user && user.password === password) {
+  if (user && bcrypt.compareSync(password, user.password)) {
     // user is authenticated
     return user;
   } else {
@@ -260,9 +261,11 @@ app.get("/register", (req, res) => {
 //needs to check if a user is registered, if they are - return an error/redirect to login.
 //If they are a new user - set the cookie and update our users object.
 app.post("/register", (req, res) => {
+  
   const email = req.body.email;
-  const password = req.body.password;
-
+  const password = bcrypt.hashSync(req.body.password, saltRounds);
+  
+  
   const user = findUserByEmail(email); //function in the global scope
 
   if (email === "" || password === "") {
