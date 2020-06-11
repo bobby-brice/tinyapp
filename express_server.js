@@ -13,15 +13,26 @@ app.use(bodyParser.urlencoded({
 }));
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": {
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "userRandomID"
+  },
+  "9sm5xK": {
+    longURL: "http://www.google.ca",
+    userID: "userRandomID"
+  },
+  "9sm3xK": {
+    longURL: "http://www.google.ca",
+    userID: "user2RandomID"
+  }
 };
+
 
 const users = {
   "userRandomID": {
     id: "userRandomID",
-    email: "user@example.com",
-    password: "purple-monkey-dinosaur"
+    email: "bobby.brice@gmail.com",
+    password: "test"
   },
   "user2RandomID": {
     id: "user2RandomID",
@@ -86,6 +97,22 @@ const authenticateUser = (email, password) => {
   }
 };
 
+const urlsForUser = function(userID) {
+  const urlsForUsersDatabase = {};
+  for (let shortURL in urlDatabase) {
+    if (urlDatabase[shortURL].userID === userID) {
+      urlsForUsersDatabase[shortURL] = urlDatabase[shortURL];
+    }
+  }
+  return urlsForUsersDatabase;
+};
+
+// {
+//   "9sm3xK": {
+//     longURL: "http://www.google.ca",
+//     userID: "aJ482W"
+//   }
+// }
 
 // GENERIC ROUTES
 
@@ -115,20 +142,27 @@ app.get("/users.json", (req, res) => {
 
 //renders the new URL shortener page that takes in the address to be shortened
 app.get("/urls/new", (req, res) => {
+  const user = users[req.cookies["user_id"]];
   let templateVars = {
-    user: users[req.cookies["user_id"]],
+    user: user,
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL]
   };
-  res.render("urls_new", templateVars);
+
+  if (user) {
+    res.render("urls_new", templateVars);
+  } else {
+    res.redirect("/login");
+  }
 });
 
 //redirects short URLs to long URL
 app.get("/u/:shortURL", (req, res) => {
   console.log(req.params.shortURL);
 
-  let shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL];
+  const shortURL = req.params.shortURL;
+  const longURL = urlDatabase[shortURL].longURL;
+  
   res.redirect(longURL); //external site
 });
 
@@ -136,13 +170,14 @@ app.get("/u/:shortURL", (req, res) => {
 //input is a newURL and a form submit button
 //updates the existing shortURL with a new longURL
 app.post("/urls/:shortURL", (req, res) => {
-  console.log(req.params);
-  console.log(req.body);
+
   let shortURL = req.params.shortURL;
   let longURL = req.body.newURL;
-  urlDatabase[shortURL] = longURL;
-
-  res.redirect("/urls");
+  const user = users[req.cookies["user_id"]];
+  if (user) {
+    urlDatabase[shortURL].longURL = longURL;
+    res.redirect("/urls");
+  }
 });
 
 // In the event of a GET request, asking for /urls/somethingIDontKnowYet, do the callback
@@ -155,30 +190,45 @@ app.get("/urls/:shortURL", (req, res) => {
   let templateVars = {
     user: users[req.cookies["user_id"]],
     shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL]
+    longURL: urlDatabase[req.params.shortURL]["longURL"]
   };
+
   res.render("urls_show", templateVars);
 });
 
 //route shows our short url and long url table
 app.get("/urls", (req, res) => {
-  console.log("the cookie", req.cookies);
-  
-  // Declare an object called templateVars, and we assign to the key urls, the value of the variable urlDatabase
-  let templateVars = {
-    user: users[req.cookies["user_id"]],
-    urls: urlDatabase
-  };
+  // Declare an object called templateVars, and we assign to the key urls, the value of the variable urlDatabase\
+  const user = users[req.cookies["user_id"]];
+
+  if (user) {
+    let templateVars = {
+      user,
+      urls: urlsForUser(user.id)
+    };
+    res.render("urls_index", templateVars);
+  } else {
+    res.redirect("/login");
+  }
   // Render the template (or complete the template) with the values provided by the object called templateVars
-  res.render("urls_index", templateVars);
+  // res.render("urls_index", templateVars);
 });
 
 //takes a request from
 app.post("/urls", (req, res) => {
-  // console.log(req.body); // Log the POST request body to the console
+  
   const tinyURL = generateRandomString(); //produces the key
   const longURL = req.body.longURL; //gets the value from the response body
-  urlDatabase[tinyURL] = longURL;
+  const userID = users[req.cookies["user_id"]];
+  
+  const newURLObj = {
+     
+    "longURL": longURL,
+    "userID": userID.id
+    
+  };
+  urlDatabase[tinyURL] = newURLObj;
+  // console.log("urlDatabase", urlDatabase);
 
   res.redirect(`/urls/${tinyURL}`);
 });
@@ -186,11 +236,13 @@ app.post("/urls", (req, res) => {
 //Takes a delete request from the form in urls_index
 //redirects to the same page as a form of refresh
 app.post("/urls/:shortURL/delete", (req, res) => {
-  console.log(req.params);
-  
-  const shortURL = req.params.shortURL;
-  delete urlDatabase[shortURL];
-  res.redirect("/urls");
+  // console.log(req.params);
+  const user = users[req.cookies["user_id"]];
+  if (user) {
+    const shortURL = req.params.shortURL;
+    delete urlDatabase[shortURL];
+    res.redirect("/urls");
+  }
 });
 
 //---------------------------------------END URL SPECIFIC ROUTES------------------------
