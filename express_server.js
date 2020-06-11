@@ -3,14 +3,18 @@ const app = express();
 const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
 const morgan = require('morgan');
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
-app.use(cookieParser());
+
 app.set('view engine', "ejs");
 app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({
   extended: true
+}));
+app.use(cookieSession({
+  name: "session",
+  keys: ["123456","09876"]
 }));
 
 const urlDatabase = {
@@ -33,12 +37,12 @@ const users = {
   "userRandomID": {
     id: "userRandomID",
     email: "bobby.brice@gmail.com",
-    password: "test"
+    password: bcrypt.hashSync("test", saltRounds),
   },
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk"
+    password: bcrypt.hashSync("dishwasher-funk", saltRounds),
   },
 };
 
@@ -58,11 +62,12 @@ function generateRandomString() {
 const addNewUser = (email, password) => {
   // Generate a random id
   const userId = generateRandomString();
-
+  console.log("password: ", password);
+  
   const newUser = {
     id: userId,
     email,
-    password,
+    password: bcrypt.hashSync(password, saltRounds),
   };
 
   // Add the user Object into the usersDb
@@ -143,7 +148,7 @@ app.get("/users.json", (req, res) => {
 
 //renders the new URL shortener page that takes in the address to be shortened
 app.get("/urls/new", (req, res) => {
-  const user = users[req.cookies["user_id"]];
+  const user = req.session["user_id"]; //users[req.cookies["user_id"]];
   let templateVars = {
     user: user,
     shortURL: req.params.shortURL,
@@ -174,7 +179,7 @@ app.post("/urls/:shortURL", (req, res) => {
 
   let shortURL = req.params.shortURL;
   let longURL = req.body.newURL;
-  const user = users[req.cookies["user_id"]];
+  const user = users[req.session["user_id"]];   //[req.cookies["user_id"]];
   if (user) {
     urlDatabase[shortURL].longURL = longURL;
     res.redirect("/urls");
@@ -189,7 +194,7 @@ app.get("/urls/:shortURL", (req, res) => {
   // Populate the object with : the value of req.params.shortURL, in the key called shortURL
   // Populate the object with : the value of the urlDatabse, at the key of req.params.shortURL, in the key called longURL
   let templateVars = {
-    user: users[req.cookies["user_id"]],
+    user: users[req.session["user_id"]],    //[req.cookies["user_id"]],
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL]["longURL"]
   };
@@ -200,7 +205,7 @@ app.get("/urls/:shortURL", (req, res) => {
 //route shows our short url and long url table
 app.get("/urls", (req, res) => {
   // Declare an object called templateVars, and we assign to the key urls, the value of the variable urlDatabase\
-  const user = users[req.cookies["user_id"]];
+  const user = users[req.session["user_id"]];  //[req.cookies["user_id"]];
 
   if (user) {
     let templateVars = {
@@ -220,7 +225,7 @@ app.post("/urls", (req, res) => {
   
   const tinyURL = generateRandomString(); //produces the key
   const longURL = req.body.longURL; //gets the value from the response body
-  const userID = users[req.cookies["user_id"]];
+  const userID = users[req.session["user_id"]];     //[req.cookies["user_id"]];
   
   const newURLObj = {
      
@@ -238,12 +243,13 @@ app.post("/urls", (req, res) => {
 //redirects to the same page as a form of refresh
 app.post("/urls/:shortURL/delete", (req, res) => {
   // console.log(req.params);
-  const user = users[req.cookies["user_id"]];
+  const user = users[req.session["user_id"]];             //[req.cookies["user_id"]];
   if (user) {
     const shortURL = req.params.shortURL;
     delete urlDatabase[shortURL];
     res.redirect("/urls");
   }
+  res.status(403).send("no can do!");
 });
 
 //---------------------------------------END URL SPECIFIC ROUTES------------------------
@@ -252,7 +258,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 //show the registration page if a user requests 'register' from the header form
 app.get("/register", (req, res) => {
   let templateVars = {
-    user: users[req.cookies["user_id"]],
+    user: users[req.session["user_id"]],            //[req.cookies["user_id"]],
     urls: urlDatabase
   };
   res.render("urls_register", templateVars);
@@ -263,7 +269,7 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
   
   const email = req.body.email;
-  const password = bcrypt.hashSync(req.body.password, saltRounds);
+  const password = req.body.password;
   
   
   const user = findUserByEmail(email); //function in the global scope
@@ -272,7 +278,7 @@ app.post("/register", (req, res) => {
     return res.status(404).send("Please provide a valid email & password");
   } else if (!user) {
     const userID = addNewUser(email, password);
-    res.cookie("user_id", userID);
+    req.session["user_id"] = userID;
     res.redirect("/urls");
   } else {
     return res.status(404).send("You have already registered, please login.");
@@ -284,7 +290,7 @@ app.post("/register", (req, res) => {
 //---------------------------------------BEGIN LOGIN & LOGOUT------------------------
 app.get("/login", (req, res) => {
   let templateVars = {
-    user: users[req.cookies["user_id"]],
+    user: users[req.session["user_id"]],            //[req.cookies["user_id"]],
     urls: urlDatabase
   };
   res.render("urls_login", templateVars);
@@ -298,7 +304,7 @@ app.post("/login", (req, res) => {
   const user = authenticateUser(email, password);
 
   if (user) {
-    res.cookie("user_id", user.id);
+    req.session["user_id"] = user.id;
     res.redirect("/urls");
   } else {
     res.status(403).send('You have provided invalid credentials');
@@ -311,7 +317,7 @@ app.post("/login", (req, res) => {
 //handles a post from the nav-form for user login
 app.post("/logout", (req, res) => {
   // console.log(req.body);
-  res.clearCookie("user_id", null);
+  req.session["user_id"] = null;
   res.redirect("/urls");
 });
 
